@@ -54,6 +54,7 @@ class Start(webapp2.RequestHandler):
         site = parsed_json['site']
         contact = parsed_json['contact']
         installation = Installation(
+                id=parsed_json['site']['name'],
                 sites=[Site(name = parsed_json['site']['name'],
                             address_one = parsed_json['site']['address one'],
                             address_two = parsed_json['site']['address two'],
