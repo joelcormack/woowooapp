@@ -1,7 +1,7 @@
 import cgi
 import urllib
 
-from google.appengine.api import users
+from google.appengine.api import users, mail
 from google.appengine.ext import ndb
 from webapp2_extras import json
 import webapp2
@@ -72,6 +72,19 @@ class Start(webapp2.RequestHandler):
         )
         installation_key = installation.put()
         print installation_key
+
+        mail.send_mail(sender="WooWoo Waterless Toilets <joel.greta@gmail.com>",
+                to="Joel <joel@joelcormack.com>",
+                subject="Please confirm this provisional date",
+                body="""
+Hi Joel
+
+A payment has come through and you must confirm this porvisional date to continue the process.
+
+Is the following date ok for an installation?
+
+""")
+
 
 app = webapp2.WSGIApplication([
     ('/', MainPage),
