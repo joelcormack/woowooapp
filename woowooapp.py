@@ -39,7 +39,13 @@ class Installation(ndb.Model):
 
 class MainPage(webapp2.RequestHandler):
     def get(self):
-        self.response.write('hello')
+        self.response.out.write('<html><body>')
+        installations = Installation.query().fetch(20)
+
+        for installation in installations:
+            self.response.out.write('<blockquote>%s</blockquote>' %
+                                    cgi.escape(installation.sites[0].name))
+        self.response.out.write('</body></html>')
 
 class Guestbook(webapp2.RequestHandler):
     def post(self):
