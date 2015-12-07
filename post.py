@@ -14,6 +14,7 @@ data = { "site" : {
                 "mobile" : "012873873",
         }
 }
-headers = {'content-type': 'application/json'}
+headers = {'content-type': 'application/x-www-form-urlencode'}
 
-r = requests.post("http://0.0.0.0:8080/update", data=json.dumps(data), headers=headers)
+r = requests.post("http://192.168.1.126:8080", data=data, headers=headers)
+print r

@@ -18,8 +18,8 @@ class Contact(ndb.Model):
     """Models a contact of the site with a name, email and phone numbers"""
     name = ndb.StringProperty()
     email = ndb.StringProperty()
-    phone = ndb.IntegerProperty()
-    mobile = ndb.IntegerProperty()
+    phone = ndb.StringProperty()
+    mobile = ndb.StringProperty()
 
 class Installation(ndb.Model):
     """Models an installation with a date set on creation, installation date,
@@ -56,19 +56,16 @@ class Guestbook(webapp2.RequestHandler):
 class Start(webapp2.RequestHandler):
     def post(self):
         data = self.request.body
-        parsed_json = json.decode(data)
-        site = parsed_json['site']
-        contact = parsed_json['contact']
         installation = Installation(
-                id=parsed_json['site']['name'],
-                sites=[Site(name = parsed_json['site']['name'],
-                            address_one = parsed_json['site']['address one'],
-                            address_two = parsed_json['site']['address two'],
-                            postcode = parsed_json['site']['postcode'])],
-                contacts=[Contact(name=parsed_json['contact']['name'],
-                            email = parsed_json['contact']['email'],
-                            phone = int(parsed_json['contact']['phone']),
-                            mobile = int(parsed_json['contact']['mobile']))]
+                id=self.request.POST['site-name'],
+                sites=[Site(name = self.request.POST['site-name'],
+                            address_one = self.request.POST['site-add-one'],
+                            address_two = self.request.POST['site-add-two'],
+                            postcode = self.request.POST['site-postcode'])],
+                contacts=[Contact(name=self.request.POST['contact-firstname'] + " " + self.request.POST['contact-lastname'],
+                            email = self.request.POST['contact-email'],
+                            phone = self.request.POST['contact-landline'],
+                            mobile = self.request.POST['contact-mobile'])]
         )
         installation_key = installation.put()
         print installation_key
