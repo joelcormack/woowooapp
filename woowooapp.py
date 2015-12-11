@@ -1,6 +1,8 @@
 import cgi
 import urllib
 
+from datetime import date, timedelta
+
 from google.appengine.api import users, mail
 from google.appengine.ext import ndb
 from webapp2_extras import json
@@ -26,16 +28,20 @@ class Installation(ndb.Model):
     delivery date and pickup date, booleans to monitor stages of confirmations for
     contractot, haulier, customer and retailer and associated sites and contacts.
     """
-    created_date = ndb.DateTimeProperty(auto_now_add=True)
-    installation_date = ndb.DateTimeProperty()
-    delivery_date = ndb.DateTimeProperty()
-    pickup_date = ndb.DateTimeProperty()
+    created_date = ndb.DateProperty(auto_now_add=True)
+    installation_date = ndb.DateProperty()
+    delivery_date = ndb.DateProperty()
+    pickup_date = ndb.DateProperty()
     contractor_confirmed = ndb.BooleanProperty(default=False)
     haulier_confirmed = ndb.BooleanProperty(default=False)
     customer_confirmed = ndb.BooleanProperty(default=False)
     retailer_confirmed = ndb.BooleanProperty(default=False)
     sites = ndb.StructuredProperty(Site, repeated=True)
     contacts = ndb.StructuredProperty(Contact, repeated=True)
+
+    @classmethod
+    def query_installtion(cls, ancestor_key):
+        return cls.query(ancestor=ancestor_key).order(-cls.created_date)
 
 class MainPage(webapp2.RequestHandler):
     def get(self):
@@ -55,7 +61,12 @@ class Guestbook(webapp2.RequestHandler):
 
 class Start(webapp2.RequestHandler):
     def post(self):
-        data = self.request.body
+        def next_weekday(d, weekday):
+            days_ahead = weekday - d.weekday()
+            if days_ahead <= 0: # Target day already happened this week
+                days_ahead += 7
+            return d + timedelta(days_ahead)
+
         installation = Installation(
                 id=self.request.POST['site-name'],
                 sites=[Site(name = self.request.POST['site-name'],
@@ -67,20 +78,31 @@ class Start(webapp2.RequestHandler):
                             phone = self.request.POST['contact-landline'],
                             mobile = self.request.POST['contact-mobile'])]
         )
+        import pdb; pdb.set_trace()
         installation_key = installation.put()
         print installation_key
-
+        provisional_date = installation.created_date
+        print "date created: ", provisional_date
+        prov_date_buffer = timedelta(days=42)
+        provisional_date += prov_date_buffer
+        provisional_date = next_weekday(provisional_date, 0)
+        print "added", provisional_date
+        yes_link = "http://google.com?s=yes"
+        print "provisional date: ", provisional_date, " (add 6 weeks)"
         mail.send_mail(sender="WooWoo Waterless Toilets <joel.greta@gmail.com>",
                 to="Joel <joel@joelcormack.com>",
                 subject="Please confirm this provisional date",
                 body="""
-Hi Joel
+Hi Jake,
 
-A payment has come through and you must confirm this porvisional date to continue the process.
+A payment has come through and you must confirm this provisional date to continue the process.
 
-Is the following date ok for an installation?
+Is the week beginning %s ok for an installation?
 
-""")
+<a href="%s">YES</a>
+
+""" % (provisional_date, yes_link) )
+
 
 
 app = webapp2.WSGIApplication([
