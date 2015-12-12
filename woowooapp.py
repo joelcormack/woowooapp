@@ -51,22 +51,33 @@ class MainPage(webapp2.RequestHandler):
         for installation in installations:
             self.response.out.write('<blockquote>%s</blockquote>' %
                                     cgi.escape(installation.sites[0].name))
+        self.response.out.write('</body></html>'
+                )
+
+class InstallationHandler(webapp2.RequestHandler):
+    def get(self, installation_id):
+        self.response.out.write('<html><body><h4>This is the installtion %s</h4>'
+                % installation_id)
         self.response.out.write('</body></html>')
 
-class Guestbook(webapp2.RequestHandler):
-    def post(self):
-        self.response.write('<html><body>You wrote:<pre>')
-        self.response.write(cgi.escape(self.request.get('content')))
-        self.response.write('</pre></body></html>')
+class InstallationListHandler(webapp2.RequestHandler):
+    def get(self):
+        self.response.out.write('<html><body><h4>A list of all the installations:</h4><ul>')
+        installations = Installation.query().fetch(20)
 
-class Start(webapp2.RequestHandler):
+        for installation in installations:
+            self.response.out.write('<li>%s</li>' %
+                                    cgi.escape(installation.sites[0].name))
+        self.response.out.write('</ul></body></html>')
+
+class InstallationAdditionHandler(webapp2.RequestHandler):
     def post(self):
         def next_weekday(d, weekday):
             days_ahead = weekday - d.weekday()
             if days_ahead <= 0: # Target day already happened this week
                 days_ahead += 7
             return d + timedelta(days_ahead)
-
+        base_url = "http://0.0.0.0:8080/"
         installation = Installation(
                 id=self.request.POST['site-name'],
                 sites=[Site(name = self.request.POST['site-name'],
@@ -78,7 +89,6 @@ class Start(webapp2.RequestHandler):
                             phone = self.request.POST['contact-landline'],
                             mobile = self.request.POST['contact-mobile'])]
         )
-        import pdb; pdb.set_trace()
         installation_key = installation.put()
         print installation_key
         provisional_date = installation.created_date
@@ -86,8 +96,9 @@ class Start(webapp2.RequestHandler):
         prov_date_buffer = timedelta(days=42)
         provisional_date += prov_date_buffer
         provisional_date = next_weekday(provisional_date, 0)
-        print "added", provisional_date
-        yes_link = "http://google.com?s=yes"
+        print "next monday from date: ", provisional_date
+        yes_link = base_url +  "/yes"
+        no_link = base_url, "/no"
         print "provisional date: ", provisional_date, " (add 6 weeks)"
         mail.send_mail(sender="WooWoo Waterless Toilets <joel.greta@gmail.com>",
                 to="Joel <joel@joelcormack.com>",
@@ -95,18 +106,29 @@ class Start(webapp2.RequestHandler):
                 body="""
 Hi Jake,
 
-A payment has come through and you must confirm this provisional date to continue the process.
+An order has come through for a toilet installation, could you please confirm that the week beginning %s is ok for you for an installation?
 
-Is the week beginning %s ok for an installation?
+Please confirm by clicking the below link.
 
 <a href="%s">YES</a>
 
-""" % (provisional_date, yes_link) )
+otherwise to choose another week click the following link.
 
+<a hfre="%s">NO</a>
+
+""" % (provisional_date, yes_link, no_link) )
+
+class InstallationStatusHandler(webapp2.RequestHandler):
+    def get(self, installation_id, status):
+        self.response.out.write('<html><body><h4>This is the installtion %s and this is the status %s</h4>'
+                % (installation_id, status))
+        self.response.out.write('</body></html>')
 
 
 app = webapp2.WSGIApplication([
-    ('/', MainPage),
-    ('/sign', Guestbook),
-    ('/update', Start),
+    webapp2.Route(r'/', MainPage),
+    webapp2.Route(r'/installations', handler=InstallationListHandler, name='installation-list'),
+    webapp2.Route(r'/installations/add', handler=InstallationAdditionHandler),
+    webapp2.Route(r'/installations/<installation_id>', handler=InstallationHandler),
+    webapp2.Route(r'/installations/<installation_id>/<status>', handler=InstallationStatusHandler),
 ], debug=True)
