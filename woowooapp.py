@@ -5,7 +5,7 @@ from datetime import date, timedelta
 
 from google.appengine.api import users, mail
 from google.appengine.ext import ndb
-from webapp2_extras import json
+from webapp2_extras import json, routes
 import webapp2
 
 class Site(ndb.Model):
@@ -127,8 +127,10 @@ class InstallationStatusHandler(webapp2.RequestHandler):
 
 app = webapp2.WSGIApplication([
     webapp2.Route(r'/', MainPage),
-    webapp2.Route(r'/installations', handler=InstallationListHandler, name='installation-list'),
-    webapp2.Route(r'/installations/add', handler=InstallationAdditionHandler),
-    webapp2.Route(r'/installations/<installation_id>', handler=InstallationHandler),
-    webapp2.Route(r'/installations/<installation_id>/<status>', handler=InstallationStatusHandler),
+    routes.PathPrefixRoute('/installations', [
+        webapp2.Route('/', handler=InstallationListHandler, name='installation-list'),
+        webapp2.Route('/add', handler=InstallationAdditionHandler),
+        webapp2.Route('/<installation_id>', handler=InstallationHandler),
+        webapp2.Route('/<installation_id>/<status>', handler=InstallationStatusHandler),
+    ]),
 ], debug=True)
